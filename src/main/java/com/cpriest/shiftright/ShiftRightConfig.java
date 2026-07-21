@@ -53,11 +53,34 @@ public final class ShiftRightConfig {
     private ShiftRightConfig() {
     }
 
+    // Test-only overrides: unit/game tests run without a loaded config file, so this
+    // is the seam they use to exercise non-default policies. Never set in production.
+    private static volatile SlotOrderPolicy testPolicyOverride;
+    private static volatile SlotOrderPolicy.Context testContextOverride;
+
+    public static void setTestOverrides(SlotOrderPolicy policy, SlotOrderPolicy.Context ctx) {
+        testPolicyOverride = policy;
+        testContextOverride = ctx;
+    }
+
+    public static void clearTestOverrides() {
+        testPolicyOverride = null;
+        testContextOverride = null;
+    }
+
     public static SlotOrderPolicy policy() {
+        SlotOrderPolicy override = testPolicyOverride;
+        if (override != null) {
+            return override;
+        }
         return fillOrder() == FillOrder.MAIN_FIRST ? MainFirstPolicy.INSTANCE : HotbarFirstPolicy.INSTANCE;
     }
 
     public static SlotOrderPolicy.Context policyContext() {
+        SlotOrderPolicy.Context override = testContextOverride;
+        if (override != null) {
+            return override;
+        }
         return direction() == Direction.REVERSE ? new SlotOrderPolicy.Context(true) : SlotOrderPolicy.Context.DEFAULT;
     }
 

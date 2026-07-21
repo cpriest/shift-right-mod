@@ -57,9 +57,16 @@ Server-side config (`serverconfig/shiftright-server.toml` per world; synced to c
 
 Requires Java 21 and network access to `maven.neoforged.net` on first run. Versions are pinned in `gradle.properties` (`minecraft_version`, `neo_version`) — adjust there to match your pack.
 
-## Testing matrix
+## Automated testing
 
-See PLAN §8. Short form: chest/double chest/furnace/shulker/hopper/brewing stand/crafting-result quick-moves land hotbar-first with no item loss; 64-stack into partial destinations, non-stackables, and `mayPlace`-restricted slots behave; AE2 terminals via SHIFT_CLICK and MOVE_REGION; repeat on a dedicated server watching for ghost items.
+Everything this mod does is server-side logic, so nearly all of it is verified headlessly in CI — no client needed:
+
+1. **Pure JUnit** — the ordering policy layer is Minecraft-free and tested directly (permutation validity, policy order, reverse, broken-policy rejection).
+2. **Menu-level JUnit** (`./gradlew test`, via ModDevGradle's FML JUnit launch) — tests run with real Minecraft classes, registries bootstrapped, **and this mod's mixins applied**. `QuickMoveIntegrationTest` shift-clicks through a real `ChestMenu` and asserts exact slot placement. Since vanilla fills the hotbar right-to-left (slot 9 first) and this mod fills left-to-right (slot 1 first), the assertions prove the mixin is active — not just that items moved. Covers top-up ordering, non-stackables, overflow, conservation, into-chest untouched, and `MAIN_FIRST` via a test-only config override.
+3. **GameTests** (`./gradlew runGameTestServer`) — a headless in-world server runs `QuickMoveGameTests`, which drive `AbstractContainerMenu#clicked` with `QUICK_MOVE` against a real chest block entity — the exact server entry point of a player's shift-click packet. The server exits non-zero on failure, so CI catches regressions.
+4. **AE2 contract check** (`ci/check-ae2-contract.sh`, separate CI job) — downloads the latest AE2 release for our MC version from Modrinth and verifies via `javap` that `AEBaseMenu#getQuickMoveDestinationSlots(ItemStack, boolean)` still exists returning `List`. If AE2 ever renames it, CI fails loudly instead of the adapter silently no-oping in-game.
+
+What CI **cannot** cover: real-input feel (shift+scroll, double-click Pickup-All), AE2/RS behavior against a live grid, and client↔server desync under latency. PLAN §8 has the manual matrix for those; the RS verification in particular is still an in-game task.
 
 ## License
 

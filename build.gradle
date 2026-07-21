@@ -29,6 +29,10 @@ neoForge {
             programArgument '--nogui'
             gameDirectory = project.file('runs/server')
         }
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = project.file('runs/gametest')
+        }
         configureEach {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
             logLevel = org.slf4j.event.Level.INFO
@@ -39,6 +43,14 @@ neoForge {
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
+    }
+
+    // Run the test source set through FML's JUnit launch target: tests get the real
+    // Minecraft classes with registries bootstrapped AND this mod's mixins applied,
+    // so menu-level behavior is testable headlessly in CI.
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
     }
 }
 
