@@ -46,6 +46,18 @@ Server-side config (`serverconfig/shiftright-server.toml` per world; synced to c
 - Within one `quickMoveStack`, a menu decides *which slot ranges to try in which order* itself; the core hook normalizes order **within** each range. Since almost all menus pass the whole player inventory as one range, this covers the dominant visible issue, but a menu that deliberately tries "main inventory range, then hotbar range" in two separate calls keeps that range preference.
 - Per-mod adapters (AE2, RS) are version-sensitive by nature; they are gated, defensive, and fall back to native behavior on any mismatch.
 
+## Development workflow (hot reload)
+
+Iterate in the **dev client**, not your installed pack — the dev client supports hot reload; a launcher pack does not.
+
+1. `./gradlew runClient` launches a dev client with this mod loaded from sources. Add `-PdevMods` to include third-party mods (AE2 preconfigured; add CurseForge mods via the CurseMaven lines in `build.gradle` — e.g. Sophisticated Backpacks — filling in the file ids from your pack).
+2. Run the `runClient` configuration from IntelliJ in **Debug** mode. Edit code, hit Build (Ctrl+F9), and JVM HotSwap reloads changed **method bodies** into the running game — no restart, no world reload.
+3. The mixins are thin one-line trampolines into plain classes (`QuickMoveReorder`, `SlotOrders`, policies, adapters) precisely so that hot reload covers the real logic. What does **not** hot reload: mixin annotations/targets, `shiftright.mixins.json`, `neoforge.mods.toml` — those need a client restart.
+4. Optional upgrade: select JetBrains Runtime as the run config JVM and add `-XX:+AllowEnhancedClassRedefinition` to also hotswap added/removed methods and fields.
+5. For final verification in your real pack: `./gradlew build`, drop `build/libs/shiftright-<version>.jar` into the pack's `mods/` folder, relaunch (no hot reload there).
+
+Most iteration shouldn't need a client at all — `./gradlew test` runs the menu-level tests with mixins applied in seconds; see Automated testing below.
+
 ## Building
 
 ```

@@ -6,6 +6,20 @@ plugins {
 version = mod_version
 group = mod_group_id
 
+repositories {
+    // AE2 releases
+    maven {
+        name = 'ModMaven'
+        url = 'https://modmaven.dev/'
+    }
+    // Any CurseForge-hosted mod via curse.maven:<slug>-<projectId>:<fileId>
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
 base {
     archivesName = mod_id
 }
@@ -58,6 +72,25 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Opt-in third-party mods for the dev client/server, so runClient launches with the
+// mods you're testing against (hot-reload-friendly, unlike your installed pack):
+//   ./gradlew runClient -PdevMods
+// Kept behind a property so CI and plain builds never try to resolve them. Verify
+// versions/file ids against your pack — see "Development workflow" in the README.
+if (project.hasProperty('devMods')) {
+    dependencies {
+        // AE2 for MC 1.21.1 from ModMaven. Override with -Pae2Version=<version> to
+        // match your pack (artifact may be appliedenergistics2-neoforge on some lines).
+        runtimeOnly "appeng:appliedenergistics2:${project.findProperty('ae2Version') ?: '19.2.9'}"
+
+        // CurseForge-hosted mods via CurseMaven: curse.maven:<slug>-<projectId>:<fileId>.
+        // Project ID is on the mod's CurseForge page; file id is in the file page URL.
+        // Example (fill in the file ids for your pack's versions and uncomment):
+        // runtimeOnly 'curse.maven:sophisticated-backpacks-422301:<fileId>'
+        // runtimeOnly 'curse.maven:sophisticated-core-618298:<fileId>'
+    }
 }
 
 test {
