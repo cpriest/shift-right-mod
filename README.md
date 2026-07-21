@@ -62,6 +62,14 @@ The Gradle dev client *is* a small custom modpack: this mod from sources + whate
 - Worlds persist in `runs/client/saves/` — create your small test world once, reuse it forever.
 - Basic loop: edit code in any editor → close client → re-run. Dev startup with a tiny modset is quick.
 
+**Working in WSL?** WSLg's mouse capture makes the Linux-side client rough to play. Use the wrapper instead — it mirrors the repo to `C:\Users\cpriest\dev\shift-right-mod` and runs the client natively on Windows (same flags pass through):
+
+```
+scripts/win-client -PdevMods
+```
+
+Edit sources in WSL as usual; every launch re-syncs. The Windows mirror keeps its own Gradle caches and world saves (`runs/` is never overwritten).
+
 **Optional true hot reload, no IDE (experimental):** install [JetBrains Runtime 21](https://github.com/JetBrains/JetBrainsRuntime/releases) (a free OpenJDK fork that bundles HotswapAgent), point `JAVA_HOME` at it, then:
 
 ```
@@ -78,6 +86,12 @@ Leave the client running; after editing code, run `./gradlew classes` in a secon
 
 ```
 ./gradlew deployJar -PmodsDir="/path/to/that/instance/mods"
+```
+
+GDLauncher Carbon keeps instances under `%APPDATA%\gdlauncher_carbon\data\instances`; from WSL the Contained Opolis mods folder is:
+
+```
+./gradlew deployJar -PmodsDir="/mnt/c/Users/cpriest/AppData/Roaming/gdlauncher_carbon/data/instances/Contained Opolis (A Space Adventure)/instance/mods"
 ```
 
 4. Restart the instance. That's the whole loop — no hot reload possible here.

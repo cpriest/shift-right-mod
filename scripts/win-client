@@ -1,0 +1,27 @@
+#!/usr/bin/env zsh
+# Launch the NeoForge dev client natively on Windows from a WSL checkout.
+#
+# WSLg's relative-mouse capture makes the Linux-side dev client unpleasant to
+# play, so this mirrors the repo to the Windows filesystem and runs
+# gradlew.bat there via cmd.exe. Any arguments are passed through to Gradle:
+#
+#   scripts/win-client                 # plain client
+#   scripts/win-client -PdevMods      # with AE2 etc.
+#
+# The Windows copy is a build mirror — edit sources here in WSL; each launch
+# re-syncs. build/, runs/ and .git are never synced, so Gradle caches and
+# world saves persist on the Windows side between launches.
+set -euo pipefail
+
+WIN_DIR='C:\Users\cpriest\dev\shift-right-mod'
+WSL_WIN_DIR='/mnt/c/Users/cpriest/dev/shift-right-mod'
+# Gradle 8.9 can't run on the newer JDKs scoop has on PATH; pin the JDK 21 install.
+WIN_JAVA_HOME='C:\scoop\apps\openjdk21\current'
+
+mkdir -p "$WSL_WIN_DIR"
+rsync -rlt --delete \
+    --exclude '/.git' --exclude '/.gradle' --exclude '/build' --exclude '/runs' \
+    "${0:a:h:h}/" "$WSL_WIN_DIR/"
+
+exec /mnt/c/Windows/System32/cmd.exe /c \
+    "set JAVA_HOME=$WIN_JAVA_HOME&& cd /d $WIN_DIR&& gradlew.bat runClient --console=plain $*"

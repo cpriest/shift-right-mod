@@ -7,10 +7,11 @@ version = mod_version
 group = mod_group_id
 
 repositories {
-    // AE2 releases
+    // AE2 releases (Modrinth carries every 19.2.x; ModMaven stops at 19.2.0-beta)
     maven {
-        name = 'ModMaven'
-        url = 'https://modmaven.dev/'
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+        content { includeGroup 'maven.modrinth' }
     }
     // Any CurseForge-hosted mod via curse.maven:<slug>-<projectId>:<fileId>
     maven {
@@ -89,9 +90,9 @@ dependencies {
 // versions/file ids against your pack — see "Development workflow" in the README.
 if (project.hasProperty('devMods')) {
     dependencies {
-        // AE2 for MC 1.21.1 from ModMaven. Override with -Pae2Version=<version> to
-        // match your pack (artifact may be appliedenergistics2-neoforge on some lines).
-        runtimeOnly "appeng:appliedenergistics2:${project.findProperty('ae2Version') ?: '19.2.9'}"
+        // AE2 for MC 1.21.1 from Modrinth. Default matches the Contained Opolis pack;
+        // override with -Pae2Version=<version> if the pack updates.
+        runtimeOnly "maven.modrinth:ae2:${project.findProperty('ae2Version') ?: '19.2.17'}"
 
         // CurseForge-hosted mods via CurseMaven: curse.maven:<slug>-<projectId>:<fileId>.
         // Project ID is on the mod's CurseForge page; file id is in the file page URL.
