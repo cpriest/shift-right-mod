@@ -46,17 +46,43 @@ Server-side config (`serverconfig/shiftright-server.toml` per world; synced to c
 - Within one `quickMoveStack`, a menu decides *which slot ranges to try in which order* itself; the core hook normalizes order **within** each range. Since almost all menus pass the whole player inventory as one range, this covers the dominant visible issue, but a menu that deliberately tries "main inventory range, then hotbar range" in two separate calls keeps that range preference.
 - Per-mod adapters (AE2, RS) are version-sensitive by nature; they are gated, defensive, and fall back to native behavior on any mismatch.
 
-## Development workflow (hot reload)
+## Development workflow (no IDE needed)
 
-Iterate in the **dev client**, not your installed pack — the dev client supports hot reload; a launcher pack does not.
+Two tracks. Hot reload only exists in the **dev client** — a launcher pack (GDLauncher etc.) loads the mod as a sealed jar with mixins woven at startup, so it can never reload code without a restart.
 
-1. `./gradlew runClient` launches a dev client with this mod loaded from sources. Add `-PdevMods` to include third-party mods (AE2 preconfigured; add CurseForge mods via the CurseMaven lines in `build.gradle` — e.g. Sophisticated Backpacks — filling in the file ids from your pack).
-2. Run the `runClient` configuration from IntelliJ in **Debug** mode. Edit code, hit Build (Ctrl+F9), and JVM HotSwap reloads changed **method bodies** into the running game — no restart, no world reload.
-3. The mixins are thin one-line trampolines into plain classes (`QuickMoveReorder`, `SlotOrders`, policies, adapters) precisely so that hot reload covers the real logic. What does **not** hot reload: mixin annotations/targets, `shiftright.mixins.json`, `neoforge.mods.toml` — those need a client restart.
-4. Optional upgrade: select JetBrains Runtime as the run config JVM and add `-XX:+AllowEnhancedClassRedefinition` to also hotswap added/removed methods and fields.
-5. For final verification in your real pack: `./gradlew build`, drop `build/libs/shiftright-<version>.jar` into the pack's `mods/` folder, relaunch (no hot reload there).
+### Track 1 — dev client as your test pack (recommended)
 
-Most iteration shouldn't need a client at all — `./gradlew test` runs the menu-level tests with mixins applied in seconds; see Automated testing below.
+The Gradle dev client *is* a small custom modpack: this mod from sources + whatever `-PdevMods` pulls in (AE2 preconfigured; add CurseForge mods via the CurseMaven lines in `build.gradle`). Terminal-only:
+
+```
+./gradlew runClient -PdevMods
+```
+
+- First launch downloads assets (~1 GB, once). Signs you in as an offline "Dev" player.
+- Worlds persist in `runs/client/saves/` — create your small test world once, reuse it forever.
+- Basic loop: edit code in any editor → close client → re-run. Dev startup with a tiny modset is quick.
+
+**Optional true hot reload, no IDE (experimental):** install [JetBrains Runtime 21](https://github.com/JetBrains/JetBrainsRuntime/releases) (a free OpenJDK fork that bundles HotswapAgent), point `JAVA_HOME` at it, then:
+
+```
+./gradlew runClient -PdevMods -PhotSwap
+```
+
+Leave the client running; after editing code, run `./gradlew classes` in a second terminal. HotswapAgent watches the compiled class files and redefines changed classes in the live game — no restart, world stays loaded. The mixins are thin one-line trampolines into plain classes (`QuickMoveReorder`, `SlotOrders`, policies, adapters) precisely so the real logic stays hot-reloadable; changing mixin annotations/targets, `shiftright.mixins.json`, or `neoforge.mods.toml` still needs a restart. If JBR/toolchain selection fights you, fall back to the restart loop — it costs about a minute.
+
+### Track 2 — your GDLauncher pack (restart per change)
+
+1. In GDLauncher, create a custom instance: MC 1.21.1, NeoForge (21.1.235 or any 21.1.x), and add AE2/whatever from its CurseForge browser.
+2. Use the instance's "open folder" button to find its `mods/` directory.
+3. Deploy in one command (builds the jar, removes old shift-right jars, copies the new one):
+
+```
+./gradlew deployJar -PmodsDir="/path/to/that/instance/mods"
+```
+
+4. Restart the instance. That's the whole loop — no hot reload possible here.
+
+Most iteration shouldn't need a client at all — `./gradlew test` proves the reordering against real menus with mixins applied in seconds; see Automated testing below.
 
 ## Building
 

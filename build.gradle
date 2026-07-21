@@ -37,6 +37,14 @@ neoForge {
         client {
             client()
             gameDirectory = project.file('runs/client')
+            // Experimental IDE-free hot reload (see README): requires JetBrains
+            // Runtime (JBR) 21 as the JVM Gradle uses. JBR bundles HotswapAgent,
+            // which watches the compiled class files and redefines changed classes
+            // in the running client when you re-run `./gradlew classes`.
+            if (project.hasProperty('hotSwap')) {
+                jvmArgument '-XX:+AllowEnhancedClassRedefinition'
+                jvmArgument '-XX:HotswapAgent=fatjar'
+            }
         }
         server {
             server()
@@ -95,6 +103,27 @@ if (project.hasProperty('devMods')) {
 
 test {
     useJUnitPlatform()
+}
+
+// Build the jar and drop it into a launcher instance's mods folder (removing any
+// older shift-right jars first):
+//   ./gradlew deployJar -PmodsDir="/path/to/your/instance/mods"
+tasks.register('deployJar', Copy) {
+    group = 'shift-right'
+    description = "Copies the built mod jar into a launcher instance mods folder given via -PmodsDir"
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar'))
+    into(providers.gradleProperty('modsDir').orElse('build/deploy-jar-missing-modsDir'))
+    doFirst {
+        def modsDir = project.findProperty('modsDir')
+        if (!modsDir) {
+            throw new GradleException('Pass -PmodsDir="<path to your launcher instance mods folder>"')
+        }
+        if (!project.file(modsDir).isDirectory()) {
+            throw new GradleException("modsDir does not exist or is not a directory: ${modsDir}")
+        }
+        project.delete(project.fileTree(modsDir) { include "${mod_id}-*.jar" })
+    }
 }
 
 var replaceProperties = [
