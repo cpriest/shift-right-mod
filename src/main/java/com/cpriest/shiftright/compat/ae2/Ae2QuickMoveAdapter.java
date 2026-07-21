@@ -2,6 +2,7 @@ package com.cpriest.shiftright.compat.ae2;
 
 import com.cpriest.shiftright.QuickMoveReorder;
 import com.cpriest.shiftright.ShiftRightConfig;
+import com.cpriest.shiftright.debug.HookTelemetry;
 import com.cpriest.shiftright.policy.QuickMoveSlot;
 import com.cpriest.shiftright.policy.SlotOrders;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ public final class Ae2QuickMoveAdapter {
             if (ordered == null) {
                 return original;
             }
+            HookTelemetry.AE2_ADAPTER.record();
             List<Slot> result = new ArrayList<>(ordered.size());
             for (QuickMoveSlot slot : ordered) {
                 result.add((Slot) slot.handle());

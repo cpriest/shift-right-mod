@@ -38,6 +38,9 @@ neoForge {
         client {
             client()
             gameDirectory = project.file('runs/client')
+            // Hook-telemetry HUD (HookOverlay): time since each reorder hook last
+            // fired. Dev-client only — released jars never see this property.
+            systemProperty 'shiftright.debugOverlay', 'true'
             // Experimental IDE-free hot reload (see README): requires JetBrains
             // Runtime (JBR) 21 as the JVM Gradle uses. JBR bundles HotswapAgent,
             // which watches the compiled class files and redefines changed classes
@@ -83,22 +86,31 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-// Opt-in third-party mods for the dev client/server, so runClient launches with the
-// mods you're testing against (hot-reload-friendly, unlike your installed pack):
-//   ./gradlew runClient -PdevMods
-// Kept behind a property so CI and plain builds never try to resolve them. Verify
-// versions/file ids against your pack — see "Development workflow" in the README.
-if (project.hasProperty('devMods')) {
+// Opt-in third-party mods for the dev client/server, in two tiers (kept behind
+// properties so CI and plain builds never try to resolve them):
+//   ./gradlew runClient                 vanilla + this mod only
+//   ./gradlew runClient -PdevMods       + the interaction mods below (pack-matched)
+//   ./gradlew runClient -PdevStorage    devMods tier + the storage mods
+// Versions match the Contained Opolis pack where it ships the mod; CurseMaven
+// coordinates are curse.maven:<slug>-<projectId>:<fileId>.
+if (project.hasProperty('devMods') || project.hasProperty('devStorage')) {
     dependencies {
-        // AE2 for MC 1.21.1 from Modrinth. Default matches the Contained Opolis pack;
-        // override with -Pae2Version=<version> if the pack updates.
+        runtimeOnly 'maven.modrinth:mouse-tweaks:1.21-2.26.1-neoforge'
+        runtimeOnly 'maven.modrinth:inventory-essentials:21.1.17+neoforge-1.21.1'
+        runtimeOnly 'maven.modrinth:balm:21.0.62+neoforge-1.21.1' // Inventory Essentials dep (Modrinth poms omit deps)
+        runtimeOnly 'curse.maven:inventory-sorter-240633:7188660' // 1.21.1-24.0.24, not on Modrinth
+        runtimeOnly 'maven.modrinth:emi:1.1.24+1.21.1+neoforge'
+    }
+}
+if (project.hasProperty('devStorage')) {
+    dependencies {
+        // Override with -Pae2Version=<version> if the pack updates.
         runtimeOnly "maven.modrinth:ae2:${project.findProperty('ae2Version') ?: '19.2.17'}"
-
-        // CurseForge-hosted mods via CurseMaven: curse.maven:<slug>-<projectId>:<fileId>.
-        // Project ID is on the mod's CurseForge page; file id is in the file page URL.
-        // Example (fill in the file ids for your pack's versions and uncomment):
-        // runtimeOnly 'curse.maven:sophisticated-backpacks-422301:<fileId>'
-        // runtimeOnly 'curse.maven:sophisticated-core-618298:<fileId>'
+        runtimeOnly 'maven.modrinth:guideme:21.1.16' // AE2 dep (Modrinth poms omit deps)
+        runtimeOnly 'maven.modrinth:refined-storage:2.0.9'
+        runtimeOnly 'maven.modrinth:sophisticated-storage:1.21.1-1.5.80.1999'
+        runtimeOnly 'maven.modrinth:sophisticated-backpacks:1.21.1-3.25.71.1997'
+        runtimeOnly 'maven.modrinth:sophisticated-core:1.21.1-1.4.77.2173'
     }
 }
 

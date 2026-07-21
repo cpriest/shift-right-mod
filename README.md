@@ -52,15 +52,19 @@ Two tracks. Hot reload only exists in the **dev client** — a launcher pack (GD
 
 ### Track 1 — dev client as your test pack (recommended)
 
-The Gradle dev client *is* a small custom modpack: this mod from sources + whatever `-PdevMods` pulls in (AE2 preconfigured; add CurseForge mods via the CurseMaven lines in `build.gradle`). Terminal-only:
+The Gradle dev client *is* a small custom modpack: this mod from sources plus an opt-in mod tier, versions matched to the Contained Opolis pack where it ships the mod:
 
 ```
-./gradlew runClient -PdevMods
+./gradlew runClient                # vanilla + this mod only
+./gradlew runClient -PdevMods      # + MouseTweaks, Inventory Sorter, Inventory Essentials, EMI
+./gradlew runClient -PdevStorage   # devMods tier + AE2, Refined Storage, Sophisticated Storage & Backpacks
 ```
 
 - First launch downloads assets (~1 GB, once). Signs you in as an offline "Dev" player.
 - Worlds persist in `runs/client/saves/` — create your small test world once, reuse it forever.
 - Basic loop: edit code in any editor → close client → re-run. Dev startup with a tiny modset is quick.
+
+**Hook telemetry HUD:** the dev client draws a small top-left overlay — one line per reorder hook (core `quickMove`, vanilla add-path, AE2 adapter) showing time since it last fired and a call count (bursts within one shift-click count once; the add-path lines also tick on ground pickups, which use the same scan). Lines turn green for ~2 s after firing, so shift-click in some modded container and glance up to confirm the hook engaged. It's gated behind `-Dshiftright.debugOverlay=true`, which only the Gradle client run sets — released jars never render it. Note the hooks record on the (integrated) server, so the overlay is meaningful in singleplayer, which is exactly the dev-client case.
 
 **Working in WSL?** WSLg's mouse capture makes the Linux-side client rough to play. Use the wrapper instead — it mirrors the repo to `C:\Users\cpriest\dev\shift-right-mod` and runs the client natively on Windows (same flags pass through):
 

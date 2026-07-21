@@ -1,5 +1,6 @@
 package com.cpriest.shiftright;
 
+import com.cpriest.shiftright.debug.HookTelemetry;
 import com.cpriest.shiftright.policy.QuickMoveSlot;
 import com.cpriest.shiftright.policy.SlotOrders;
 import com.mojang.logging.LogUtils;
@@ -49,6 +50,7 @@ public final class QuickMoveReorder {
             if (permutation == null) {
                 return index;
             }
+            HookTelemetry.CORE_QUICK_MOVE.record();
             int position = reverseDirection ? (endIndex - 1 - index) : (index - startIndex);
             return permutation[position];
         } catch (Throwable t) {
@@ -84,8 +86,12 @@ public final class QuickMoveReorder {
             for (int i = 0; i < size; i++) {
                 candidates.add(classifyContainerSlot(i, i));
             }
-            return SlotOrders.computeIndexPermutation(candidates, ShiftRightConfig.policy(),
+            int[] order = SlotOrders.computeIndexPermutation(candidates, ShiftRightConfig.policy(),
                     ShiftRightConfig.policyContext());
+            if (order != null) {
+                HookTelemetry.ADD_PATH.record();
+            }
+            return order;
         } catch (Throwable t) {
             logOnce(t);
             return null;
