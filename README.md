@@ -1,30 +1,65 @@
-# shift-right-mod
+# shift-right
 
 A NeoForge mod that makes shift-click (quick-move) put items in the **same predictable place every time** — across vanilla containers, modded blocks, and ME-style storage terminals (AE2, Refined Storage).
 
-Default order: hotbar (1→9), then main inventory (top-left → bottom-right).
-
-## Status
-Early / in design. See [PLAN.md](PLAN.md) for the full build spec.
+Default order: **hotbar (1→9), then main inventory (top-left → bottom-right)**.
 
 ## Why
+
 Vanilla and modded containers disagree on where shift-clicked items land — some fill the hotbar first, some the top inventory row, some in reverse. This normalizes all of them to one configurable order.
 
-## Scope
-- **Vanilla + simple modded containers** — via the shared `moveItemStackTo` transfer path.
-- **Mods using the vanilla give-path** (`Inventory.add`) — via `getFreeSlot` / `getSlotWithRemainingSpace`.
-- **AE2 / Refined Storage terminals** — via optional, version-gated per-mod adapters.
-
 ## Requirements
-- Minecraft 1.21.x, NeoForge.
-- **Install on the server** (and singleplayer). Behavior is server-authoritative; a client-only install on a vanilla server does nothing.
+
+- Minecraft **1.21.1**, NeoForge 21.1.x.
+- **Install on the server** (and in singleplayer). All hooks run server-authoritatively; a client-only install on a server without the mod does nothing useful. Install on both sides for correct client-side prediction (the server-side config syncs to clients on login).
+
+## How it works
+
+One ordering policy, many adapters (see [PLAN.md](PLAN.md) for the full design):
+
+1. **Vanilla-helper containers** (chests, furnaces, most simple modded blocks) — a mixin wraps the slot lookups inside `AbstractContainerMenu#moveItemStackTo` so its two merge passes *visit* slots in policy order. Vanilla still does all merge math (`mayPlace`, max stack sizes, return semantics); the slot list itself is never reordered, so there is nothing to desync. Ranges containing no player-inventory slots (e.g. moving items *into* a chest) are left completely untouched.
+2. **Vanilla give-path** (`Inventory.add` / `player.addItem`) — many mods with custom `quickMoveStack` logic delegate "find a home" to `Inventory#getFreeSlot()` / `getSlotWithRemainingSpace()`. An optional mixin reorders those scans. Note these also fire on ground pickup and dispenser-style insertion; with the default hotbar-first/forward policy the scan order equals vanilla's, so you'll only notice under `MAIN_FIRST`/`REVERSE`. Toggle: `enableVanillaAddPathMixin`.
+3. **AE2 terminals** (ME / Crafting / Pattern Access / Wireless / Portable) — AE2's SHIFT_CLICK and MOVE_REGION paths funnel through `AEBaseMenu#getQuickMoveDestinationSlots`, which returns an ordered list of vanilla slots. An optional `@Pseudo` mixin reorders that list; AE2's own powered extraction and merging are reused untouched. No hard dependency — the adapter is dormant unless AE2 is present.
+
+Every adapter fails safe: on any signature mismatch or unexpected state it logs once and falls back to the mod's native behavior. Never crash, never lose items.
+
+### Refined Storage status
+
+Per PLAN §6, the first step is determining whether RS even needs its own adapter: RS inserts extracted items into the player inventory through an insertable-storage wrapper rather than an ordered slot list. On NeoForge that wrapper resolves through the player-inventory item handler (slots 0→35, i.e. already hotbar-first) and/or the vanilla add path covered by hook #2 above. **No RS-specific mixin ships yet** — verify against the pack's RS version before writing one (the `enableRefinedStorageAdapter` config key is reserved for it). If your RS grid fills in the wrong order with this mod installed, please open an issue with the RS version.
 
 ## Configuration
-Server-side config: fill order (hotbar-first / main-first), direction (forward / reverse), and per-adapter toggles for AE2 and Refined Storage.
+
+Server-side config (`serverconfig/shiftright-server.toml` per world; synced to clients):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `fillOrder` | `HOTBAR_FIRST` | `HOTBAR_FIRST` or `MAIN_FIRST` — which section fills first |
+| `direction` | `FORWARD` | `REVERSE` flips the whole order (hotbar 9→1, main bottom-right→top-left) |
+| `enableAe2Adapter` | `true` | Reorder AE2 terminal quick-move destinations |
+| `enableRefinedStorageAdapter` | `true` | Reserved (see Refined Storage status above) |
+| `enableVanillaAddPathMixin` | `true` | Reorder `getFreeSlot`/`getSlotWithRemainingSpace` scans |
 
 ## Known limitations
-- Vanilla **Pickup-All** (double shift-click) still uses vanilla ordering.
-- Per-mod adapters (AE2, RS) are version-sensitive and fail safe — they fall back to the mod's native behavior on any mismatch.
+
+- **Pickup-All** (double-click / double shift-click collection) uses separate vanilla logic and still fills in vanilla order. (Same limitation Consistent Shift documents.)
+- Within one `quickMoveStack`, a menu decides *which slot ranges to try in which order* itself; the core hook normalizes order **within** each range. Since almost all menus pass the whole player inventory as one range, this covers the dominant visible issue, but a menu that deliberately tries "main inventory range, then hotbar range" in two separate calls keeps that range preference.
+- Per-mod adapters (AE2, RS) are version-sensitive by nature; they are gated, defensive, and fall back to native behavior on any mismatch.
+
+## Building
+
+```
+./gradlew build        # jar in build/libs/
+./gradlew test         # pure unit tests for the ordering policy
+./gradlew runClient    # dev client
+./gradlew runServer    # dev server
+```
+
+Requires Java 21 and network access to `maven.neoforged.net` on first run. Versions are pinned in `gradle.properties` (`minecraft_version`, `neo_version`) — adjust there to match your pack.
+
+## Testing matrix
+
+See PLAN §8. Short form: chest/double chest/furnace/shulker/hopper/brewing stand/crafting-result quick-moves land hotbar-first with no item loss; 64-stack into partial destinations, non-stackables, and `mayPlace`-restricted slots behave; AE2 terminals via SHIFT_CLICK and MOVE_REGION; repeat on a dedicated server watching for ghost items.
 
 ## License
-MIT, see License
+
+MIT — see [LICENSE](LICENSE).
