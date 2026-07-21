@@ -1,0 +1,148 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.78'
+}
+
+version = mod_version
+group = mod_group_id
+
+repositories {
+    // AE2 releases
+    maven {
+        name = 'ModMaven'
+        url = 'https://modmaven.dev/'
+    }
+    // Any CurseForge-hosted mod via curse.maven:<slug>-<projectId>:<fileId>
+    maven {
+        name = 'CurseMaven'
+        url = 'https://cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+base {
+    archivesName = mod_id
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('runs/client')
+            // Experimental IDE-free hot reload (see README): requires JetBrains
+            // Runtime (JBR) 21 as the JVM Gradle uses. JBR bundles HotswapAgent,
+            // which watches the compiled class files and redefines changed classes
+            // in the running client when you re-run `./gradlew classes`.
+            if (project.hasProperty('hotSwap')) {
+                jvmArgument '-XX:+AllowEnhancedClassRedefinition'
+                jvmArgument '-XX:HotswapAgent=fatjar'
+            }
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            gameDirectory = project.file('runs/server')
+        }
+        gameTestServer {
+            type = 'gameTestServer'
+            gameDirectory = project.file('runs/gametest')
+        }
+        configureEach {
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            logLevel = org.slf4j.event.Level.INFO
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+
+    // Run the test source set through FML's JUnit launch target: tests get the real
+    // Minecraft classes with registries bootstrapped AND this mod's mixins applied,
+    // so menu-level behavior is testable headlessly in CI.
+    unitTest {
+        enable()
+        testedMod = mods."${mod_id}"
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Opt-in third-party mods for the dev client/server, so runClient launches with the
+// mods you're testing against (hot-reload-friendly, unlike your installed pack):
+//   ./gradlew runClient -PdevMods
+// Kept behind a property so CI and plain builds never try to resolve them. Verify
+// versions/file ids against your pack — see "Development workflow" in the README.
+if (project.hasProperty('devMods')) {
+    dependencies {
+        // AE2 for MC 1.21.1 from ModMaven. Override with -Pae2Version=<version> to
+        // match your pack (artifact may be appliedenergistics2-neoforge on some lines).
+        runtimeOnly "appeng:appliedenergistics2:${project.findProperty('ae2Version') ?: '19.2.9'}"
+
+        // CurseForge-hosted mods via CurseMaven: curse.maven:<slug>-<projectId>:<fileId>.
+        // Project ID is on the mod's CurseForge page; file id is in the file page URL.
+        // Example (fill in the file ids for your pack's versions and uncomment):
+        // runtimeOnly 'curse.maven:sophisticated-backpacks-422301:<fileId>'
+        // runtimeOnly 'curse.maven:sophisticated-core-618298:<fileId>'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Build the jar and drop it into a launcher instance's mods folder (removing any
+// older shift-right jars first):
+//   ./gradlew deployJar -PmodsDir="/path/to/your/instance/mods"
+tasks.register('deployJar', Copy) {
+    group = 'shift-right'
+    description = "Copies the built mod jar into a launcher instance mods folder given via -PmodsDir"
+    dependsOn tasks.named('jar')
+    from(tasks.named('jar'))
+    into(providers.gradleProperty('modsDir').orElse('build/deploy-jar-missing-modsDir'))
+    doFirst {
+        def modsDir = project.findProperty('modsDir')
+        if (!modsDir) {
+            throw new GradleException('Pass -PmodsDir="<path to your launcher instance mods folder>"')
+        }
+        if (!project.file(modsDir).isDirectory()) {
+            throw new GradleException("modsDir does not exist or is not a directory: ${modsDir}")
+        }
+        project.delete(project.fileTree(modsDir) { include "${mod_id}-*.jar" })
+    }
+}
+
+var replaceProperties = [
+        minecraft_version      : minecraft_version,
+        minecraft_version_range: minecraft_version_range,
+        neo_version            : neo_version,
+        neo_version_range      : neo_version_range,
+        loader_version_range   : loader_version_range,
+        mod_id                 : mod_id,
+        mod_name               : mod_name,
+        mod_license            : mod_license,
+        mod_version            : mod_version,
+        mod_authors            : mod_authors,
+        mod_description        : mod_description,
+]
+
+tasks.named('processResources', ProcessResources).configure {
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/neoforge.mods.toml']) {
+        expand replaceProperties
+    }
+}
