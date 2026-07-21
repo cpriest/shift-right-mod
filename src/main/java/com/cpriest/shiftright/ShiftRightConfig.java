@@ -51,7 +51,8 @@ public final class ShiftRightConfig {
             .define("enableSophisticatedAdapter", true);
 
     private static final ModConfigSpec.BooleanValue ENABLE_REFINED_STORAGE_ADAPTER = BUILDER
-            .comment("Reserved: reorder quick-move destinations for Refined Storage grids (see README for current status).")
+            .comment("Reorder Refined Storage grid-to-player extraction (RS inserts first-fit with no top-up pass;",
+                    "this makes it fill like vanilla: matching stacks first, then empties, in policy order).")
             .define("enableRefinedStorageAdapter", true);
 
     private static final ModConfigSpec.BooleanValue ENABLE_VANILLA_ADD_PATH_MIXIN = BUILDER

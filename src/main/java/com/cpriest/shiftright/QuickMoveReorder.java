@@ -78,20 +78,28 @@ public final class QuickMoveReorder {
      * (mixin disabled by config, or any internal failure).
      */
     public static int[] inventoryScanOrder(int size) {
+        if (!ShiftRightConfig.vanillaAddPathEnabled()) {
+            return null;
+        }
+        int[] order = policyScanOrder(size);
+        if (order != null) {
+            HookTelemetry.ADD_PATH.record();
+        }
+        return order;
+    }
+
+    /**
+     * Policy scan order over {@code size} player container slots (0..8 hotbar,
+     * 9..35 main), independent of any config toggle, or {@code null} on failure.
+     */
+    public static int[] policyScanOrder(int size) {
         try {
-            if (!ShiftRightConfig.vanillaAddPathEnabled()) {
-                return null;
-            }
             List<QuickMoveSlot> candidates = new ArrayList<>(size);
             for (int i = 0; i < size; i++) {
                 candidates.add(classifyContainerSlot(i, i));
             }
-            int[] order = SlotOrders.computeIndexPermutation(candidates, ShiftRightConfig.policy(),
+            return SlotOrders.computeIndexPermutation(candidates, ShiftRightConfig.policy(),
                     ShiftRightConfig.policyContext());
-            if (order != null) {
-                HookTelemetry.ADD_PATH.record();
-            }
-            return order;
         } catch (Throwable t) {
             logOnce(t);
             return null;

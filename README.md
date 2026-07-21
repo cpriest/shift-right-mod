@@ -26,7 +26,7 @@ Every adapter fails safe: on any signature mismatch or unexpected state it logs 
 
 ### Refined Storage status
 
-Per PLAN §6, the first step is determining whether RS even needs its own adapter: RS inserts extracted items into the player inventory through an insertable-storage wrapper rather than an ordered slot list. On NeoForge that wrapper resolves through the player-inventory item handler (slots 0→35, i.e. already hotbar-first) and/or the vanilla add path covered by hook #2 above. **No RS-specific mixin ships yet** — verify against the pack's RS version before writing one (the `enableRefinedStorageAdapter` config key is reserved for it). If your RS grid fills in the wrong order with this mod installed, please open an issue with the RS version.
+PLAN §6's hope that RS wouldn't need an adapter did not survive in-game verification (RS 2.0.9): grid-to-player extraction inserts through `ItemHandlerHelper.insertItem` — single-pass first-fit over the player-inventory item handler with **no top-up pass**, so an empty hotbar slot beat existing partial stacks. An adapter now ships: a `@Pseudo` mixin wraps that call inside RS's `ItemHandlerInsertableStorage` and replaces it with vanilla-style two passes (matching stacks, then empties) in policy order — only when the destination is the player inventory wrapper, so machine/exporter insertions keep RS-native behavior.
 
 ## Configuration
 
@@ -39,7 +39,7 @@ Server-side config (`serverconfig/shiftright-server.toml` per world; synced to c
 | `enableAe2Adapter` | `true` | Reorder AE2 terminal quick-move destinations |
 | `enableMouseTweaksAdapter` | `true` | Reorder MouseTweaks' wheel-scroll destination search (scrolled-out items land hotbar-first; which stack *donates* into a container stays governed by MouseTweaks' own `wheelSearchOrder` config) |
 | `enableSophisticatedAdapter` | `true` | Reorder Sophisticated Storage/Backpacks quick-moves into the player inventory (their menus reimplement vanilla's merge, bypassing the core hook) |
-| `enableRefinedStorageAdapter` | `true` | Reserved (see Refined Storage status above) |
+| `enableRefinedStorageAdapter` | `true` | Reorder Refined Storage grid-to-player extraction: matching stacks first, then empties, in policy order |
 | `enableVanillaAddPathMixin` | `true` | Reorder `getFreeSlot`/`getSlotWithRemainingSpace` scans |
 
 ## Known limitations
@@ -66,7 +66,7 @@ The Gradle dev client *is* a small custom modpack: this mod from sources plus an
 - Worlds persist in `runs/client/saves/` — create your small test world once, reuse it forever.
 - Basic loop: edit code in any editor → close client → re-run. Dev startup with a tiny modset is quick.
 
-**Hook telemetry HUD:** the dev client draws a small top-left overlay — one line per reorder hook (core `quickMove`, vanilla add-path, AE2 adapter, MouseTweaks adapter, Sophisticated adapter) showing time since it last fired and a call count (bursts within one shift-click count once; the add-path lines also tick on ground pickups, which use the same scan). Lines turn green for ~2 s after firing, so shift-click in some modded container and glance up to confirm the hook engaged. It's gated behind `-Dshiftright.debugOverlay=true`, which only the Gradle client run sets — released jars never render it. Note the hooks record on the (integrated) server, so the overlay is meaningful in singleplayer, which is exactly the dev-client case.
+**Hook telemetry HUD:** the dev client draws a small top-left overlay — one line per reorder hook (core `quickMove`, vanilla add-path, AE2 adapter, MouseTweaks adapter, Sophisticated adapter, RS adapter) showing time since it last fired and a call count (bursts within one shift-click count once; the add-path lines also tick on ground pickups, which use the same scan). Lines turn green for ~2 s after firing, so shift-click in some modded container and glance up to confirm the hook engaged. It's gated behind `-Dshiftright.debugOverlay=true`, which only the Gradle client run sets — released jars never render it. Note the hooks record on the (integrated) server, so the overlay is meaningful in singleplayer, which is exactly the dev-client case.
 
 **Working in WSL?** WSLg's mouse capture makes the Linux-side client rough to play. Use the wrapper instead — it mirrors the repo to `C:\Users\cpriest\dev\shift-right-mod` and runs the client natively on Windows (same flags pass through):
 

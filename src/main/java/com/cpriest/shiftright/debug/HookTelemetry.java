@@ -21,7 +21,8 @@ public enum HookTelemetry {
     ADD_PATH("add-path scan"),
     AE2_ADAPTER("AE2 dest reorder"),
     MOUSE_TWEAKS("MouseTweaks dest reorder"),
-    SOPHISTICATED("Sophisticated merge");
+    SOPHISTICATED("Sophisticated merge"),
+    REFINED_STORAGE("RS grid insert");
 
     static final long DEBOUNCE_NANOS = 100_000_000L;
 

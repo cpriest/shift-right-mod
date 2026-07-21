@@ -7,6 +7,7 @@
     "AbstractContainerMenuMixin",
     "InventoryMixin",
     "compat.AEBaseMenuMixin",
+    "compat.RsItemHandlerInsertableStorageMixin",
     "compat.StorageContainerMenuBaseMixin"
   ],
   "client": [
