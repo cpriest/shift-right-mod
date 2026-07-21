@@ -6,7 +6,8 @@
   "mixins": [
     "AbstractContainerMenuMixin",
     "InventoryMixin",
-    "compat.AEBaseMenuMixin"
+    "compat.AEBaseMenuMixin",
+    "compat.StorageContainerMenuBaseMixin"
   ],
   "client": [
     "compat.MouseTweaksMainMixin"

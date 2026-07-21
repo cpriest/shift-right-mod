@@ -2,8 +2,10 @@ package com.cpriest.shiftright.mixin.compat;
 
 import com.cpriest.shiftright.compat.ae2.Ae2QuickMoveAdapter;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.sugar.Local;
 import java.util.List;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,7 +27,8 @@ public abstract class AEBaseMenuMixin {
             method = "getQuickMoveDestinationSlots(Lnet/minecraft/world/item/ItemStack;Z)Ljava/util/List;",
             at = @At("RETURN"),
             require = 0)
-    private List<Slot> shiftright$reorderQuickMoveDestinations(List<Slot> original) {
-        return Ae2QuickMoveAdapter.reorder(original);
+    private List<Slot> shiftright$reorderQuickMoveDestinations(List<Slot> original,
+                                                               @Local(argsOnly = true) ItemStack stackToMove) {
+        return Ae2QuickMoveAdapter.reorder(original, stackToMove);
     }
 }

@@ -40,7 +40,7 @@ public final class QuickMoveReorder {
      * {@code reverseDirection} flag.
      */
     public static int mapVisit(AbstractContainerMenu menu, int index, int startIndex, int endIndex,
-                               boolean reverseDirection) {
+                               boolean reverseDirection, HookTelemetry hook) {
         try {
             if (index < startIndex || index >= endIndex || endIndex - startIndex < 2
                     || endIndex > menu.slots.size()) {
@@ -50,7 +50,7 @@ public final class QuickMoveReorder {
             if (permutation == null) {
                 return index;
             }
-            HookTelemetry.CORE_QUICK_MOVE.record();
+            hook.record();
             int position = reverseDirection ? (endIndex - 1 - index) : (index - startIndex);
             return permutation[position];
         } catch (Throwable t) {

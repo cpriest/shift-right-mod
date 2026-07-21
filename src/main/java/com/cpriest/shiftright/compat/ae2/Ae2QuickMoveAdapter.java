@@ -8,6 +8,7 @@ import com.cpriest.shiftright.policy.SlotOrders;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * AE2 adapter logic (PLAN §5). AE2's shift-click path (SHIFT_CLICK and MOVE_REGION)
@@ -20,6 +21,13 @@ import net.minecraft.world.inventory.Slot;
  * classification uses the same generic container-slot logic as the core mixin and
  * needs no AE2 classes at all (which also removes most version fragility).
  *
+ * <p>Slots holding a matching, non-full stack are moved ahead of everything else
+ * (each group in policy order). The slot shift-click path is two-pass (top-up, then
+ * empties) and unaffected by this split, but the terminal-grid shift-click
+ * ({@code MEStorageMenu#moveOneStackToPlayer}) walks the list single-pass first-fit —
+ * without partials-first it opens a fresh policy-first slot instead of topping up,
+ * unlike vanilla.
+ *
  * <p>Fully fail-safe: any surprise (config off, unexpected list contents, policy
  * mismatch, exception) returns AE2's original list unchanged.
  */
@@ -28,7 +36,7 @@ public final class Ae2QuickMoveAdapter {
     private Ae2QuickMoveAdapter() {
     }
 
-    public static List<Slot> reorder(List<Slot> original) {
+    public static List<Slot> reorder(List<Slot> original, ItemStack stackToMove) {
         try {
             if (original == null || original.size() < 2 || !ShiftRightConfig.ae2AdapterEnabled()) {
                 return original;
@@ -43,14 +51,24 @@ public final class Ae2QuickMoveAdapter {
                 return original;
             }
             HookTelemetry.AE2_ADAPTER.record();
-            List<Slot> result = new ArrayList<>(ordered.size());
+            List<Slot> topUpTargets = new ArrayList<>();
+            List<Slot> rest = new ArrayList<>(ordered.size());
             for (QuickMoveSlot slot : ordered) {
-                result.add((Slot) slot.handle());
+                (canTopUp((Slot) slot.handle(), stackToMove) ? topUpTargets : rest).add((Slot) slot.handle());
             }
-            return result;
+            topUpTargets.addAll(rest);
+            return topUpTargets;
         } catch (Throwable t) {
             QuickMoveReorder.logOnce(t);
             return original;
         }
+    }
+
+    private static boolean canTopUp(Slot slot, ItemStack stackToMove) {
+        ItemStack destination = slot.getItem();
+        return !destination.isEmpty()
+                && destination.isStackable()
+                && ItemStack.isSameItemSameComponents(destination, stackToMove)
+                && destination.getCount() < slot.getMaxStackSize(destination);
     }
 }

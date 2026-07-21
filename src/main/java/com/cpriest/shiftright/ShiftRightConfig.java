@@ -45,6 +45,11 @@ public final class ShiftRightConfig {
                     "MouseTweaks' own wheelSearchOrder config).")
             .define("enableMouseTweaksAdapter", true);
 
+    private static final ModConfigSpec.BooleanValue ENABLE_SOPHISTICATED_ADAPTER = BUILDER
+            .comment("Reorder Sophisticated Storage/Backpacks quick-moves into the player inventory (their menus",
+                    "reimplement vanilla's merge, bypassing the core hook).")
+            .define("enableSophisticatedAdapter", true);
+
     private static final ModConfigSpec.BooleanValue ENABLE_REFINED_STORAGE_ADAPTER = BUILDER
             .comment("Reserved: reorder quick-move destinations for Refined Storage grids (see README for current status).")
             .define("enableRefinedStorageAdapter", true);
@@ -104,6 +109,10 @@ public final class ShiftRightConfig {
 
     public static boolean mouseTweaksAdapterEnabled() {
         return SPEC.isLoaded() ? ENABLE_MOUSE_TWEAKS_ADAPTER.get() : true;
+    }
+
+    public static boolean sophisticatedAdapterEnabled() {
+        return SPEC.isLoaded() ? ENABLE_SOPHISTICATED_ADAPTER.get() : true;
     }
 
     public static boolean refinedStorageAdapterEnabled() {

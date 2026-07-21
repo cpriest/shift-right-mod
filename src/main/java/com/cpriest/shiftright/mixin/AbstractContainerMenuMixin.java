@@ -1,6 +1,7 @@
 package com.cpriest.shiftright.mixin;
 
 import com.cpriest.shiftright.QuickMoveReorder;
+import com.cpriest.shiftright.debug.HookTelemetry;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -33,7 +34,7 @@ public abstract class AbstractContainerMenuMixin {
                                                       @Local(argsOnly = true, ordinal = 1) int endIndex,
                                                       @Local(argsOnly = true) boolean reverseDirection) {
         int mapped = QuickMoveReorder.mapVisit((AbstractContainerMenu) (Object) this, index, startIndex, endIndex,
-                reverseDirection);
+                reverseDirection, HookTelemetry.CORE_QUICK_MOVE);
         return original.call(slots, mapped);
     }
 }
