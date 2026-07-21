@@ -37,6 +37,7 @@ Server-side config (`serverconfig/shiftright-server.toml` per world; synced to c
 | `fillOrder` | `HOTBAR_FIRST` | `HOTBAR_FIRST` or `MAIN_FIRST` — which section fills first |
 | `direction` | `FORWARD` | `REVERSE` flips the whole order (hotbar 9→1, main bottom-right→top-left) |
 | `enableAe2Adapter` | `true` | Reorder AE2 terminal quick-move destinations |
+| `enableMouseTweaksAdapter` | `true` | Reorder MouseTweaks' wheel-scroll destination search (scrolled-out items land hotbar-first; which stack *donates* into a container stays governed by MouseTweaks' own `wheelSearchOrder` config) |
 | `enableRefinedStorageAdapter` | `true` | Reserved (see Refined Storage status above) |
 | `enableVanillaAddPathMixin` | `true` | Reorder `getFreeSlot`/`getSlotWithRemainingSpace` scans |
 
@@ -64,7 +65,7 @@ The Gradle dev client *is* a small custom modpack: this mod from sources plus an
 - Worlds persist in `runs/client/saves/` — create your small test world once, reuse it forever.
 - Basic loop: edit code in any editor → close client → re-run. Dev startup with a tiny modset is quick.
 
-**Hook telemetry HUD:** the dev client draws a small top-left overlay — one line per reorder hook (core `quickMove`, vanilla add-path, AE2 adapter) showing time since it last fired and a call count (bursts within one shift-click count once; the add-path lines also tick on ground pickups, which use the same scan). Lines turn green for ~2 s after firing, so shift-click in some modded container and glance up to confirm the hook engaged. It's gated behind `-Dshiftright.debugOverlay=true`, which only the Gradle client run sets — released jars never render it. Note the hooks record on the (integrated) server, so the overlay is meaningful in singleplayer, which is exactly the dev-client case.
+**Hook telemetry HUD:** the dev client draws a small top-left overlay — one line per reorder hook (core `quickMove`, vanilla add-path, AE2 adapter, MouseTweaks adapter) showing time since it last fired and a call count (bursts within one shift-click count once; the add-path lines also tick on ground pickups, which use the same scan). Lines turn green for ~2 s after firing, so shift-click in some modded container and glance up to confirm the hook engaged. It's gated behind `-Dshiftright.debugOverlay=true`, which only the Gradle client run sets — released jars never render it. Note the hooks record on the (integrated) server, so the overlay is meaningful in singleplayer, which is exactly the dev-client case.
 
 **Working in WSL?** WSLg's mouse capture makes the Linux-side client rough to play. Use the wrapper instead — it mirrors the repo to `C:\Users\cpriest\dev\shift-right-mod` and runs the client natively on Windows (same flags pass through):
 

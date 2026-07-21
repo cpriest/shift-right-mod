@@ -39,6 +39,12 @@ public final class ShiftRightConfig {
             .comment("Reorder quick-move destinations for AE2 terminals (ME/Crafting/Pattern Access/Wireless/Portable).")
             .define("enableAe2Adapter", true);
 
+    private static final ModConfigSpec.BooleanValue ENABLE_MOUSE_TWEAKS_ADAPTER = BUILDER
+            .comment("Reorder MouseTweaks' wheel-scroll destination search so scrolled-out items land in the player",
+                    "inventory in policy order (client-side; which stack DONATES into a container stays governed by",
+                    "MouseTweaks' own wheelSearchOrder config).")
+            .define("enableMouseTweaksAdapter", true);
+
     private static final ModConfigSpec.BooleanValue ENABLE_REFINED_STORAGE_ADAPTER = BUILDER
             .comment("Reserved: reorder quick-move destinations for Refined Storage grids (see README for current status).")
             .define("enableRefinedStorageAdapter", true);
@@ -94,6 +100,10 @@ public final class ShiftRightConfig {
 
     public static boolean ae2AdapterEnabled() {
         return SPEC.isLoaded() ? ENABLE_AE2_ADAPTER.get() : true;
+    }
+
+    public static boolean mouseTweaksAdapterEnabled() {
+        return SPEC.isLoaded() ? ENABLE_MOUSE_TWEAKS_ADAPTER.get() : true;
     }
 
     public static boolean refinedStorageAdapterEnabled() {

@@ -19,7 +19,8 @@ import java.util.function.LongSupplier;
 public enum HookTelemetry {
     CORE_QUICK_MOVE("quickMove reorder"),
     ADD_PATH("add-path scan"),
-    AE2_ADAPTER("AE2 dest reorder");
+    AE2_ADAPTER("AE2 dest reorder"),
+    MOUSE_TWEAKS("MouseTweaks dest reorder");
 
     static final long DEBOUNCE_NANOS = 100_000_000L;
 

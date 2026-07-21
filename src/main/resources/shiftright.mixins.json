@@ -8,7 +8,9 @@
     "InventoryMixin",
     "compat.AEBaseMenuMixin"
   ],
-  "client": [],
+  "client": [
+    "compat.MouseTweaksMainMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
