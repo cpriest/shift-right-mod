@@ -10,7 +10,8 @@ Vanilla and modded containers disagree on where shift-clicked items land — som
 
 ## Requirements
 
-- Minecraft **1.21.1**, NeoForge 21.1.x.
+- Minecraft **1.21.1**, NeoForge 21.1.x (any 21.1 build; compiled/tested against 21.1.235). Verified pack: Contained Opolis; ATM10-generation packs share this target.
+- Support for other MC versions still targeted by major packs (newer 1.21.x minors; possibly 1.20.1/ATM9) is planned — see PLAN §11 for the roadmap and per-version risk notes.
 - **Install on the server** (and in singleplayer). All hooks run server-authoritatively; a client-only install on a server without the mod does nothing useful. Install on both sides for correct client-side prediction (the server-side config syncs to clients on login).
 
 ## How it works

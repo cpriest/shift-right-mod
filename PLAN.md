@@ -100,3 +100,12 @@ Recommendation: don't port it. Build shift-right clean; optionally open a courte
 
 Every per-mod adapter fails safe: signature mismatch → log once → fall back to native behavior. Never crash, never lose items.
 
+## 11. Multi-version strategy
+Goal: cover MC versions still actively targeted by major packs (e.g. recent ATMs), not just one pin. Priority order:
+
+1. **1.21.1 / NeoForge** (ATM10, ContainedOpolis) — current target, done. Runtime range is already `[21.1.0,)`, so one jar covers all 21.1.x NeoForge builds; compile against the pack's build (`neo_version` in `gradle.properties`) to confirm API fit.
+2. **Newer 1.21.x minors** (whatever the next ATM lands on) — small per-version work. §3's `moveItemStackTo` shape is stable across 1.20.1→1.21.x (low churn). §4 is the risk: the player-inventory/equipment refactor in later 1.21.x touched `Inventory` (`items`/`offhand`/`selected`, `getSlotWithRemainingSpace`) — re-verify field/method names per minor. AE2 majors track MC versions; the adapter is name-based and fails safe, but verify per version.
+3. **1.20.1 / Forge** (ATM9) — biggest lift, different loader: ForgeConfigSpec vs ModConfigSpec, SRG runtime mappings (mixin refmap required, ModDevGradle-Legacy or ForgeGradle toolchain), `isSameItemSameTags` instead of `isSameItemSameComponents`, AE2 15.x. The policy package and mixin *logic* port unchanged. Decide based on demand — ATM9's install base is large but aging.
+
+Mechanics: keep a single codebase and adopt **Stonecutter** (per-version preprocessing, one `chiseledBuild` producing a jar per target) when the second version lands; branch-per-version is the fallback if preprocessor overhead isn't worth it. Version-sensitive knowledge is already concentrated (slot-layout constants in `QuickMoveReorder`, the vanilla mirror in `InventoryMixin`, adapter signatures) — keep it that way so per-version diffs stay small. CI builds every target on every push.
+
