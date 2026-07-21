@@ -122,9 +122,22 @@ Everything this mod does is server-side logic, so nearly all of it is verified h
 1. **Pure JUnit** — the ordering policy layer is Minecraft-free and tested directly (permutation validity, policy order, reverse, broken-policy rejection).
 2. **Menu-level JUnit** (`./gradlew test`, via ModDevGradle's FML JUnit launch) — tests run with real Minecraft classes, registries bootstrapped, **and this mod's mixins applied**. `QuickMoveIntegrationTest` shift-clicks through a real `ChestMenu` and asserts exact slot placement. Since vanilla fills the hotbar right-to-left (slot 9 first) and this mod fills left-to-right (slot 1 first), the assertions prove the mixin is active — not just that items moved. Covers top-up ordering, non-stackables, overflow, conservation, into-chest untouched, and `MAIN_FIRST` via a test-only config override.
 3. **GameTests** (`./gradlew runGameTestServer`) — a headless in-world server runs `QuickMoveGameTests`, which drive `AbstractContainerMenu#clicked` with `QUICK_MOVE` against a real chest block entity — the exact server entry point of a player's shift-click packet. The server exits non-zero on failure, so CI catches regressions.
-4. **AE2 contract check** (`ci/check-ae2-contract.sh`, separate CI job) — downloads the latest AE2 release for our MC version from Modrinth and verifies via `javap` that `AEBaseMenu#getQuickMoveDestinationSlots(ItemStack, boolean)` still exists returning `List`. If AE2 ever renames it, CI fails loudly instead of the adapter silently no-oping in-game.
+4. **Compat contract checks** (`ci/check-compat-contracts.sh`, separate CI job) — downloads each hooked mod's jar from Modrinth (both the pinned dev versions and the latest release) and verifies via `javap` that every class/method our `@Pseudo` mixins select on still exists: AE2's `getQuickMoveDestinationSlots`, RS's `insert` + its `ItemHandlerHelper.insertItem` call, Sophisticated's `mergeItemStack` + `getSlot` calls, MouseTweaks' `findPushSlots`. If any mod reshapes a hook point, CI fails loudly instead of the adapter silently no-oping in-game.
+5. **Mixin-application GameTests** (`./gradlew runGameTestServer -PdevStorage`, also in CI) — boots the headless server with the real compat jars loaded as mods and asserts each `@Pseudo` mixin genuinely merged into its target class, plus an end-to-end behavioral check that drives Refined Storage's own `ItemHandlerInsertableStorage` (via reflection) into a mock player's inventory and asserts the top-up-first, hotbar-first result that RS-native code would get wrong.
 
-What CI **cannot** cover: real-input feel (shift+scroll, double-click Pickup-All), AE2/RS behavior against a live grid, and client↔server desync under latency. PLAN §8 has the manual matrix for those; the RS verification in particular is still an in-game task.
+What CI **cannot** cover: real-input feel (shift+scroll, double-click Pickup-All), AE2 behavior against a live powered grid, and client↔server desync under latency. PLAN §8 has the manual matrix for those.
+
+### Targeting other versions
+
+Every version is a Gradle property, so a targeted build/test run needs no file edits:
+
+```
+./gradlew test runGameTestServer -Pneo_version=21.1.240        # different NeoForge
+./gradlew runGameTestServer -PdevStorage -Pae2Version=19.2.20  # different AE2
+MC_VERSION=1.21.1 ci/check-compat-contracts.sh latest          # newest release of every hooked mod
+```
+
+`gradle.properties` pins the defaults (`minecraft_version`, `neo_version`); the compat pins live in the `devMods`/`devStorage` blocks in `build.gradle` and in the `PINNED` table of `ci/check-compat-contracts.sh` — update both when the pack updates. New MC minors additionally need coherent `neo_version`/`minecraft_version` pairs (PLAN §11 is the roadmap).
 
 ## License
 

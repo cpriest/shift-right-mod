@@ -25,16 +25,20 @@ jobs:
       - name: Run in-world game tests (headless server)
         run: ./gradlew runGameTestServer
 
+      - name: Run game tests again with all compat mods loaded (mixin-application + RS behavioral)
+        run: ./gradlew runGameTestServer -PdevStorage
+
       - name: Upload jar
         uses: actions/upload-artifact@v4
         with:
           name: shift-right-jar
           path: build/libs/*.jar
 
-  # Detects adapter drift: fails if the latest AE2 release for our MC version no
-  # longer has the method our @Pseudo mixin hooks (in-game the mixin would silently
-  # fall back to AE2's native ordering — this makes that visible in CI instead).
-  ae2-contract:
+  # Detects adapter drift across ALL hooked mods (AE2, RS, Sophisticated, MouseTweaks):
+  # javap-verifies the classes/methods our @Pseudo mixins select on, both for the
+  # pinned dev versions and the latest release of each mod (in-game a mismatch would
+  # silently fall back to native ordering — this makes it visible in CI instead).
+  compat-contracts:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,5 +49,8 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Check AE2 quick-move signature
-        run: bash ci/check-ae2-contract.sh 1.21.1
+      - name: Check pinned versions
+        run: bash ci/check-compat-contracts.sh
+
+      - name: Check latest releases (drift radar)
+        run: bash ci/check-compat-contracts.sh latest

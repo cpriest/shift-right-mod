@@ -7,12 +7,11 @@
     "AbstractContainerMenuMixin",
     "InventoryMixin",
     "compat.AEBaseMenuMixin",
+    "compat.MouseTweaksMainMixin",
     "compat.RsItemHandlerInsertableStorageMixin",
     "compat.StorageContainerMenuBaseMixin"
   ],
-  "client": [
-    "compat.MouseTweaksMainMixin"
-  ],
+  "client": [],
   "server": [],
   "injectors": {
     "defaultRequire": 1
