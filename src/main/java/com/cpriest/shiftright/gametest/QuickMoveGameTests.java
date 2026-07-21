@@ -28,7 +28,7 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public class QuickMoveGameTests {
 
     @PrefixGameTestTemplate(false)
-    @GameTest(template = "shiftright:empty")
+    @GameTest(template = "empty")
     public static void chestQuickMoveFillsHotbarFirst(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, Blocks.CHEST);
@@ -53,7 +53,7 @@ public class QuickMoveGameTests {
     }
 
     @PrefixGameTestTemplate(false)
-    @GameTest(template = "shiftright:empty")
+    @GameTest(template = "empty")
     public static void quickMoveIntoChestIsUntouchedAndConserved(GameTestHelper helper) {
         BlockPos pos = new BlockPos(1, 1, 1);
         helper.setBlock(pos, Blocks.CHEST);
